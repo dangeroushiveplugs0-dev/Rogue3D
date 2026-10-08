@@ -65,12 +65,10 @@ bool AssetResidencyManager::would_exceed_budget(const ResidencyEntry& entry) con
 
 void AssetResidencyManager::account_add(const ResidencyEntry& entry) noexcept {
     resident_bytes_ += entry.bytes;
-    if (entry.required) required_bytes_ += entry.bytes;
 }
 
 void AssetResidencyManager::account_remove(const ResidencyEntry& entry) noexcept {
     resident_bytes_ -= entry.bytes;
-    if (entry.required) required_bytes_ -= entry.bytes;
 }
 
 bool AssetResidencyManager::make_resident(ResidencyAssetId id) {
@@ -100,15 +98,9 @@ bool AssetResidencyManager::set_required(ResidencyAssetId id, bool required) {
     auto it = entries_.find(id);
     if (it == entries_.end() || it->second.required == required) return false;
     auto& entry = it->second;
-    if (entry.resident) {
-        if (required) required_bytes_ += entry.bytes;
-        else required_bytes_ -= entry.bytes;
-    }
     entry.required = required;
-    if (!entry.resident) {
-        if (required) required_bytes_ += entry.bytes;
-        else required_bytes_ -= entry.bytes;
-    }
+    if (required) required_bytes_ += entry.bytes;
+    else required_bytes_ -= entry.bytes;
     return true;
 }
 
