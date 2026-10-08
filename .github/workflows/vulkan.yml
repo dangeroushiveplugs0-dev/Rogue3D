@@ -1,0 +1,40 @@
+name: Vulkan Validation
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  shaders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vulkan shader tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glslc
+      - name: Compile Vulkan shaders
+        run: |
+          mkdir -p build/shaders
+          glslc -fshader-stage=vert engine/rendering/vulkan/shaders/mesh.vert -o build/shaders/mesh.vert.spv
+          glslc -fshader-stage=frag engine/rendering/vulkan/shaders/mesh.frag -o build/shaders/mesh.frag.spv
+          glslc -fshader-stage=comp engine/rendering/vulkan/morph_evaluator.comp -o build/shaders/morph_evaluator.comp.spv
+      - name: Verify SPIR-V outputs
+        run: |
+          test -s build/shaders/mesh.vert.spv
+          test -s build/shaders/mesh.frag.spv
+          test -s build/shaders/morph_evaluator.comp.spv
+  cmake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vulkan development files
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev glslc cmake ninja-build
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DROGUE_ENABLE_VULKAN=ON -DROGUE_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
