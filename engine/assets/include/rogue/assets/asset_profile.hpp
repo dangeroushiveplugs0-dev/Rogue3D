@@ -16,12 +16,6 @@ enum class AssetProfileKind : std::uint8_t {
     Mobile = 2
 };
 
-enum class MorphPrecision : std::uint8_t {
-    Float32 = 0,
-    Float16 = 1,
-    Auto = 2
-};
-
 struct AssetProfile {
     AssetProfileKind kind = AssetProfileKind::Full;
 
