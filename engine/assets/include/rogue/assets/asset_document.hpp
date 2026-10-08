@@ -11,7 +11,34 @@ struct Vec3 { float x=0.0f; float y=0.0f; float z=0.0f; };
 struct Quat { float x=0.0f; float y=0.0f; float z=0.0f; float w=1.0f; };
 struct Transform { Vec3 position{}; Quat rotation{}; Vec3 scale{1.0f,1.0f,1.0f}; };
 
-struct ShapeKey { std::string name; std::vector<float> position_deltas; float weight=0.0f; float slider_min=0.0f; float slider_max=1.0f; std::string category; std::string body_part; };
+enum class MorphStorage : std::uint8_t {
+    Dense = 0,
+    Sparse = 1
+};
+
+struct SparseShapeDelta {
+    std::uint32_t vertex_index = 0;
+    float dx = 0.0f;
+    float dy = 0.0f;
+    float dz = 0.0f;
+};
+
+struct ShapeKey {
+    std::string name;
+    MorphStorage storage = MorphStorage::Dense;
+
+    // Dense representation: XYZ triplets, one triplet per mesh vertex.
+    std::vector<float> position_deltas;
+
+    // Sparse representation: only vertices affected by this morph.
+    std::vector<SparseShapeDelta> sparse_deltas;
+
+    float weight=0.0f;
+    float slider_min=0.0f;
+    float slider_max=1.0f;
+    std::string category;
+    std::string body_part;
+};
 struct MorphDriverVariable { std::string name; std::string source; float scale=1.0f; };
 struct MorphDriver { std::string target; std::string expression; std::vector<MorphDriverVariable> variables; };
 struct MorphChannel { std::string name; std::string category; std::string body_part; std::vector<ShapeKey> shape_keys; std::vector<MorphDriver> drivers; };
