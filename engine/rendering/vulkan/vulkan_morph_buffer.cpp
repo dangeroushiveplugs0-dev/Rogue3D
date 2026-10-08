@@ -94,86 +94,31 @@ bool VulkanMorphBuffer::upload(const std::vector<std::uint8_t>& bytes) {
     return true;
 }
 
-bool VulkanMorphBuffer::initialize(
-    VkPhysicalDevice physical_device,
-    VkDevice device,
-    VkQueue transfer_queue,
-    std::uint32_t transfer_queue_family,
-    const MorphBuffer& source) {
+bool VulkanMorphBuffer::initialize(VkPhysicalDevice pd,VkDevice d,VkQueue q,std::uint32_t qf,const MorphBuffer& source) {
     destroy();
-
-    if (physical_device == VK_NULL_HANDLE ||
-        device == VK_NULL_HANDLE ||
-        transfer_queue == VK_NULL_HANDLE ||
-        source.packed_data().empty()) {
-        return false;
-    }
-
-    physical_device_ = physical_device;
-    device_ = device;
-    transfer_queue_ = transfer_queue;
-    transfer_queue_family_ = transfer_queue_family;
-
-    if (!create_buffer(static_cast<VkDeviceSize>(source.packed_data().size()))) {
-        destroy();
-        return false;
-    }
-
-    if (!upload(source.packed_data())) {
-        destroy();
-        return false;
-    }
-
-    slices_.clear();
-    slices_.reserve(source.slices().size());
-
-    for (const auto& source_slice : source.slices()) {
-        slices_.push_back({
-            source_slice.morph_id,
-            static_cast<std::uint32_t>(source_slice.offset),
-            source_slice.element_count,
-            static_cast<std::uint32_t>(source_slice.storage),
-            static_cast<std::uint32_t>(source_slice.precision)
-        });
-    }
-
-    active_.clear();
-    active_.reserve(source.active_morphs().size());
-
-    for (const auto& active : source.active_morphs()) {
-        active_.push_back({active.morph_id, active.weight});
-    }
-
+    if (!pd || !d || !q || source.packed_data().empty()) return false;
+    physical_device_=pd; device_=d; transfer_queue_=q; transfer_queue_family_=qf;
+    PackedGpuMorphData packed;
+    if (!pack_morph_buffer_for_gpu(source,packed) || packed.bytes.empty() || !create_buffer(packed.bytes.size())) { destroy(); return false; }
+    slices_.clear(); slices_.reserve(source.slices().size());
+    for (std::size_t i=0;i<source.slices().size();++i) { const auto&s=source.slices()[i]; slices_.push_back({s.morph_id,packed.offsets[i],s.element_count,(std::uint32_t)s.storage,(std::uint32_t)s.precision}); }
+    active_.clear(); active_.reserve(source.active_morphs().size());
+    for (const auto&a:source.active_morphs()) active_.push_back({a.morph_id,a.weight});
     return true;
 }
 
-bool VulkanMorphBuffer::update(const MorphBuffer& source) {
-    if (!is_initialized() ||
-        source.packed_data().size() > size_ ||
-        !upload(source.packed_data())) {
-        return false;
-    }
-
-    slices_.clear();
-    slices_.reserve(source.slices().size());
-
-    for (const auto& source_slice : source.slices()) {
-        slices_.push_back({
-            source_slice.morph_id,
-            static_cast<std::uint32_t>(source_slice.offset),
-            source_slice.element_count,
-            static_cast<std::uint32_t>(source_slice.storage),
-            static_cast<std::uint32_t>(source_slice.precision)
-        });
-    }
-
-    active_.clear();
-    active_.reserve(source.active_morphs().size());
-
-    for (const auto& active : source.active_morphs()) {
-        active_.push_back({active.morph_id, active.weight});
-    }
-
+bool VulkanMorphBuffer::update(VkCommandBuffer command_buffer,const MorphBuffer& source) {
+    if (!is_initialized() || !command_buffer) return false;
+    PackedGpuMorphData packed;
+    if (!pack_morph_buffer_for_gpu(source,packed) || packed.bytes.empty() || packed.bytes.size()>size_) return false;
+    VulkanUploadBuffer upload;
+    if (!upload.initialize(physical_device_,device_,packed.bytes.size(),VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) ||
+        !upload.upload(packed.bytes.data(),packed.bytes.size()) ||
+        !record_buffer_copy_and_barrier(command_buffer,upload.buffer(),buffer_,packed.bytes.size())) return false;
+    slices_.clear(); slices_.reserve(source.slices().size());
+    for (std::size_t i=0;i<source.slices().size();++i) { const auto&s=source.slices()[i]; slices_.push_back({s.morph_id,packed.offsets[i],s.element_count,(std::uint32_t)s.storage,(std::uint32_t)s.precision}); }
+    active_.clear(); active_.reserve(source.active_morphs().size());
+    for (const auto&a:source.active_morphs()) active_.push_back({a.morph_id,a.weight});
     return true;
 }
 

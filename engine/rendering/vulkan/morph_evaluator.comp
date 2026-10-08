@@ -1,5 +1,5 @@
 #version 450
-layout(local_size_x = 64) in;
+layout(local_size_x=64) in;
 struct Slice { uint morph_id; uint offset_bytes; uint element_count; uint storage_mode; uint precision; };
 struct Active { uint morph_id; float weight; };
 layout(std430,set=0,binding=0) readonly buffer Base { vec4 base_positions[]; };
@@ -8,22 +8,44 @@ layout(std430,set=0,binding=2) readonly buffer Payload { uint payload[]; };
 layout(std430,set=0,binding=3) readonly buffer Slices { Slice slices[]; };
 layout(std430,set=0,binding=4) readonly buffer ActiveMorphs { Active active[]; };
 layout(push_constant) uniform Params { uint vertex_count; uint slice_count; uint active_count; } params;
-vec2 half2(uint value) { return unpackHalf2x16(value); }
-vec3 dense_delta(uint offset_bytes, uint vertex_index, uint precision) {
-    if (precision == 0u) { uint i=offset_bytes/4u+vertex_index*3u; return vec3(uintBitsToFloat(payload[i]),uintBitsToFloat(payload[i+1u]),uintBitsToFloat(payload[i+2u])); }
-    uint byte_index=offset_bytes+vertex_index*6u; uint i=byte_index/4u; uint lane=(byte_index&2u)/2u;
-    uint a=payload[i]; uint b=payload[i+1u]; vec2 p=half2(a); vec2 q=half2(b);
-    return lane==0u ? vec3(p.x,p.y,q.x) : vec3(p.y,q.x,q.y);
+
+vec2 half2(uint v){return unpackHalf2x16(v);}
+
+vec3 dense_delta(uint off,uint v,uint p){
+ if(p==0u){uint i=off/4u+v*3u;return vec3(uintBitsToFloat(payload[i]),uintBitsToFloat(payload[i+1u]),uintBitsToFloat(payload[i+2u]));}
+ uint i=off/4u+v*2u;
+ vec2 a=half2(payload[i]);
+ vec2 b=half2(payload[i+1u]);
+ return vec3(a.x,a.y,b.x);
 }
-void main() {
-    uint v=gl_GlobalInvocationID.x; if(v>=params.vertex_count)return;
-    vec3 position=base_positions[v].xyz;
-    for(uint a=0u;a<params.active_count;++a) {
-        for(uint s=0u;s<params.slice_count;++s) {
-            Slice slice=slices[s]; if(slice.morph_id!=active[a].morph_id)continue;
-            if(slice.storage_mode==0u) position+=dense_delta(slice.offset_bytes,v,slice.precision)*active[a].weight;
-            break;
-        }
-    }
-    output_positions[v]=vec4(position,1.0);
+
+vec3 sparse32(uint off,uint i,out uint target){
+ uint p=off/4u+i*4u;target=payload[p];
+ return vec3(uintBitsToFloat(payload[p+1u]),uintBitsToFloat(payload[p+2u]),uintBitsToFloat(payload[p+3u]));
+}
+
+vec3 sparse16(uint off,uint i,out uint target){
+ uint p=off/4u+i*3u;
+ target=payload[p];
+ vec2 a=half2(payload[p+1u]);
+ vec2 b=half2(payload[p+2u]);
+ return vec3(a.x,a.y,b.x);
+}
+
+void main(){
+ uint v=gl_GlobalInvocationID.x;if(v>=params.vertex_count)return;
+ vec3 position=base_positions[v].xyz;
+ for(uint a=0u;a<params.active_count;++a){
+  for(uint s=0u;s<params.slice_count;++s){
+   Slice sl=slices[s];if(sl.morph_id!=active[a].morph_id)continue;
+   if(sl.storage_mode==0u) position+=dense_delta(sl.offset_bytes,v,sl.precision)*active[a].weight;
+   else if(sl.precision==0u){
+    for(uint i=0u;i<sl.element_count;++i){uint target;vec3 d=sparse32(sl.offset_bytes,i,target);if(target==v){position+=d*active[a].weight;break;}}
+   } else {
+    for(uint i=0u;i<sl.element_count;++i){uint target;vec3 d=sparse16(sl.offset_bytes,i,target);if(target==v){position+=d*active[a].weight;break;}}
+   }
+   break;
+  }
+ }
+ output_positions[v]=vec4(position,1.0);
 }
