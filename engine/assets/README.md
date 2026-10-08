@@ -1,4 +1,4 @@
-# RogueEngine Asset Document
+# Gearsin Asset Document
 
 AssetDocument is the shared high-level representation between import and export.
 
