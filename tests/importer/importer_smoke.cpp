@@ -1,11 +1,9 @@
 #include <cassert>
 #include "rogue/importer/asset_importer.hpp"
-
+#include "rogue/importer/blend_bridge.hpp"
 int main() {
-    using rogue::importer::AssetFormat;
-    assert(rogue::importer::detect_format("character.glb") == AssetFormat::GLB);
-    assert(rogue::importer::detect_format("character.gltf") == AssetFormat::GLTF);
-    assert(rogue::importer::detect_format("character.obj") == AssetFormat::OBJ);
-    assert(rogue::importer::detect_format("character.fbx") == AssetFormat::Unknown);
+    rogue::importer::BlendBridge bridge;
+    assert(bridge.supports_extension("character.blend"));
+    assert(!bridge.supports_extension("character.glb"));
     return 0;
 }
