@@ -2,6 +2,7 @@
 
 #if defined(ROGUE_ENABLE_VULKAN)
 #include <fstream>
+#include <cstring>
 #include <limits>
 
 namespace rogue::rendering::vulkan {
@@ -42,6 +43,13 @@ VulkanShaderModule::~VulkanShaderModule() {
 
 bool VulkanShaderModule::validate_spirv(const std::vector<std::uint32_t>& spirv) noexcept {
     return spirv.size() >= 5u && spirv[0] == kSpirvMagic;
+}
+
+bool VulkanShaderModule::initialize_bytes(VkDevice device, const std::uint8_t* data, std::size_t size_bytes) {
+    if (data == nullptr || size_bytes == 0 || (size_bytes % sizeof(std::uint32_t)) != 0) return false;
+    std::vector<std::uint32_t> spirv(size_bytes / sizeof(std::uint32_t));
+    std::memcpy(spirv.data(), data, size_bytes);
+    return initialize(device, spirv);
 }
 
 bool VulkanShaderModule::initialize(VkDevice device, const std::vector<std::uint32_t>& spirv) {
