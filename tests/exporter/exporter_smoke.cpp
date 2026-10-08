@@ -1,6 +1,7 @@
 #include <cassert>
 #include <fstream>
 #include <string>
+#include "rogue/assets/asset_profile.hpp"
 #include "rogue/assets/rb_serialization.hpp"
 #include "rogue/exporter/rb_exporter.hpp"
 
@@ -94,5 +95,12 @@ int main() {
     assert(roundtrip.animations.size()==1);
     assert(roundtrip.embedded_blobs.size()==1);
     assert(roundtrip.native_metadata==asset.native_metadata);
+
+    auto mobile = rogue::assets::make_mobile_profile();
+    assert(mobile.streaming_enabled);
+    assert(mobile.prefer_sparse_morphs);
+    rogue::assets::apply_asset_profile(roundtrip, mobile, {"SparseJCM"});
+    assert(roundtrip.morphs[0].shape_keys.size()==1);
+    assert(roundtrip.morphs[0].shape_keys[0].name=="SparseJCM");
     return 0;
 }
