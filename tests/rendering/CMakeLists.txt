@@ -1,0 +1,3 @@
+add_executable(rogue_rendering_smoke rendering_smoke.cpp)
+target_link_libraries(rogue_rendering_smoke PRIVATE rogue_rendering)
+add_test(NAME rogue_rendering_smoke COMMAND rogue_rendering_smoke)
