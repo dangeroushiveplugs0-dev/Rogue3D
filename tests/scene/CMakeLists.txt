@@ -1,0 +1,3 @@
+add_executable(rogue_scene_smoke scene_smoke.cpp)
+target_link_libraries(rogue_scene_smoke PRIVATE rogue_scene)
+add_test(NAME rogue_scene_smoke COMMAND rogue_scene_smoke)
