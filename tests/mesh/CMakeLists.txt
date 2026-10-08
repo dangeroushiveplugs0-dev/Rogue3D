@@ -1,0 +1,3 @@
+add_executable(rogue_mesh_smoke mesh_smoke.cpp)
+target_link_libraries(rogue_mesh_smoke PRIVATE rogue_mesh)
+add_test(NAME rogue_mesh_smoke COMMAND rogue_mesh_smoke)
