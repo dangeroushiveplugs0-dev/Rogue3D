@@ -1,0 +1,3 @@
+#include "rogue/rendering/vulkan/vulkan_morph_packing.hpp"
+#include <cassert>
+int main(){using namespace rogue::rendering;MorphBuffer b;assert(b.initialize({4,MorphBufferPrecision::Float16}));std::vector<MorphDelta>d{{2,.5f,.25f,-.5f}};assert(b.set_sparse_morph(3,d));vulkan::PackedGpuMorphData p;assert(vulkan::pack_morph_buffer_for_gpu(b,p));assert(p.bytes.size()==12);assert(p.offsets.size()==1);return 0;}

@@ -1,0 +1,11 @@
+#include "rogue/rendering/vulkan/vulkan_morph_packing.hpp"
+#include <cstring>
+namespace rogue::rendering::vulkan {
+namespace {
+void u16(std::vector<std::uint8_t>&o,std::uint16_t v){o.push_back((std::uint8_t)v);o.push_back((std::uint8_t)(v>>8));}
+void u32(std::vector<std::uint8_t>&o,std::uint32_t v){for(int i=0;i<4;++i)o.push_back((std::uint8_t)(v>>(i*8)));}
+std::uint16_t half(float x){std::uint32_t b;std::memcpy(&b,&x,4);std::uint32_t s=(b>>16)&0x8000u,e=(b>>23)&0xffu,m=b&0x7fffffu;if(e==0xffu)return (std::uint16_t)(s|(m?0x7e00u:0x7c00u));int ne=(int)e-127+15;if(ne>=31)return (std::uint16_t)(s|0x7c00u);if(ne<=0){if(ne<-10)return (std::uint16_t)s;m|=0x800000u;return (std::uint16_t)(s|((m>>(14-ne))+((m>>(13-ne))&1u)));}return (std::uint16_t)(s|((std::uint32_t)ne<<10)|(m>>13));}
+}
+bool pack_morph_buffer_for_gpu(const MorphBuffer&s,PackedGpuMorphData&o)noexcept{
+ try{o.bytes.clear();o.offsets.clear();o.offsets.reserve(s.slices().size());for(const auto&sl:s.slices()){o.offsets.push_back((std::uint32_t)o.bytes.size());if(sl.storage==MorphStorageMode::Dense){if(sl.precision==MorphBufferPrecision::Float32){auto n=sl.element_count*3u;auto off=sl.offset;for(std::uint32_t i=0;i<n;++i){if(off+i*4+4>s.packed_data().size())return false;o.bytes.insert(o.bytes.end(),s.packed_data().begin()+off+i*4,s.packed_data().begin()+off+i*4+4);}}else{for(std::uint32_t i=0;i<sl.element_count;++i){const auto*src=s.packed_data().data()+sl.offset+i*6;std::uint16_t a,b,c;std::memcpy(&a,src,2);std::memcpy(&b,src+2,2);std::memcpy(&c,src+4,2);u16(o.bytes,a);u16(o.bytes,b);u16(o.bytes,c);u16(o.bytes,0);}}}else{for(std::uint32_t i=0;i<sl.element_count;++i){if(sl.precision==MorphBufferPrecision::Float32){const auto*src=s.packed_data().data()+sl.offset+i*16;o.bytes.insert(o.bytes.end(),src,src+16);}else{const auto*src=s.packed_data().data()+sl.offset+i*10;std::uint32_t idx;std::uint16_t a,b,c;std::memcpy(&idx,src,4);std::memcpy(&a,src+4,2);std::memcpy(&b,src+6,2);std::memcpy(&c,src+8,2);u32(o.bytes,idx);u16(o.bytes,a);u16(o.bytes,b);u16(o.bytes,c);u16(o.bytes,0);}}}}return true;}catch(...){return false;}}
+}
