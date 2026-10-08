@@ -32,10 +32,12 @@ std::uint16_t to_half(float value) noexcept {
     return static_cast<std::uint16_t>(sign);
 }
 
-template<class T>
-void append_bytes(std::vector<std::uint8_t>& dst, const T& value) {
-    const auto* p = reinterpret_cast<const std::uint8_t*>(&value);
-    dst.insert(dst.end(), p, p + sizeof(T));
+bool append_u32(std::vector<std::uint8_t>& dst, std::uint32_t value) {
+    dst.push_back(static_cast<std::uint8_t>(value));
+    dst.push_back(static_cast<std::uint8_t>(value >> 8));
+    dst.push_back(static_cast<std::uint8_t>(value >> 16));
+    dst.push_back(static_cast<std::uint8_t>(value >> 24));
+    return true;
 }
 
 bool append_u16(std::vector<std::uint8_t>& dst, std::uint16_t value) {
@@ -116,7 +118,7 @@ bool MorphBuffer::set_sparse_morph(std::uint32_t morph_id,
     slice.element_count = static_cast<std::uint32_t>(deltas.size());
 
     for (const auto& d : deltas) {
-        append_f32(packed_, static_cast<float>(d.vertex_index));
+        append_u32(packed_, d.vertex_index);
         if (desc_.precision == MorphBufferPrecision::Float32) {
             append_f32(packed_, d.dx); append_f32(packed_, d.dy); append_f32(packed_, d.dz);
         } else {
