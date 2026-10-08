@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
-project(RogueEngine LANGUAGES CXX)
-option(ROGUE_BUILD_TESTS "Build RogueEngine tests" ON)
+project(Gearsin LANGUAGES CXX)
+option(ROGUE_BUILD_TESTS "Build Gearsin tests" ON)
 add_subdirectory(engine/core)
 add_subdirectory(engine/rendering)
 add_subdirectory(engine/scene)
