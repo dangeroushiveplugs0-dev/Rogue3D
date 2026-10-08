@@ -1,5 +1,6 @@
 add_library(rogue_rendering STATIC
     src/null_renderer.cpp
+    src/morph_buffer.cpp
 )
 
 target_include_directories(rogue_rendering PUBLIC include)
