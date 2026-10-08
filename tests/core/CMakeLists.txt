@@ -1,0 +1,3 @@
+add_executable(rogue_core_smoke engine_smoke.cpp)
+target_link_libraries(rogue_core_smoke PRIVATE rogue_core)
+add_test(NAME rogue_core_smoke COMMAND rogue_core_smoke)
