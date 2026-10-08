@@ -9,53 +9,46 @@ layout(std430,set=0,binding=3) readonly buffer Slices { Slice slices[]; };
 layout(std430,set=0,binding=4) readonly buffer ActiveMorphs { Active active[]; };
 layout(push_constant) uniform Params { uint vertex_count; uint slice_count; uint active_count; } params;
 
-vec2 half2(uint v){ return unpackHalf2x16(v); }
+vec2 half2(uint v){return unpackHalf2x16(v);}
 
 vec3 dense_delta(uint off,uint v,uint p){
-    if(p==0u){
-        uint i=off/4u+v*3u;
-        return vec3(uintBitsToFloat(payload[i]),uintBitsToFloat(payload[i+1u]),uintBitsToFloat(payload[i+2u]));
-    }
-    uint b=off+v*6u;
-    uint i=b/4u;
-    uint lane=(b&2u)/2u;
-    vec2 a=half2(payload[i]);
-    vec2 c=half2(payload[i+1u]);
-    return lane==0u ? vec3(a.x,a.y,c.x) : vec3(a.y,c.x,c.y);
+ if(p==0u){uint i=off/4u+v*3u;return vec3(uintBitsToFloat(payload[i]),uintBitsToFloat(payload[i+1u]),uintBitsToFloat(payload[i+2u]));}
+ uint b=off+v*6u;uint i=b/4u;uint lane=(b&2u)/2u;vec2 a=half2(payload[i]);vec2 c=half2(payload[i+1u]);
+ return lane==0u?vec3(a.x,a.y,c.x):vec3(a.y,c.x,c.y);
 }
 
 vec3 sparse32(uint off,uint i,out uint target){
-    uint p=off/4u+i*4u;
-    target=payload[p];
-    return vec3(uintBitsToFloat(payload[p+1u]),uintBitsToFloat(payload[p+2u]),uintBitsToFloat(payload[p+3u]));
+ uint p=off/4u+i*4u;target=payload[p];
+ return vec3(uintBitsToFloat(payload[p+1u]),uintBitsToFloat(payload[p+2u]),uintBitsToFloat(payload[p+3u]));
+}
+
+vec3 sparse16(uint off,uint i,out uint target){
+ // Neutral MorphBuffer sparse-F16 records are 10 bytes:
+ // uint32 vertex index + uint16 dx/dy/dz. Read the bytes as uint words.
+ uint byte_index=off+i*10u;
+ uint word=byte_index/4u;
+ uint shift=(byte_index&3u)*8u;
+ uint lo=payload[word];
+ uint hi=payload[word+1u];
+ target=(lo>>shift)&0xffu;
+ // Vertex indices are byte-aligned at this record layout. For current GPU path,
+ // sparse-F16 upload should use the aligned representation introduced by the
+ // staging/packing layer; keep this path disabled until that adapter is present.
+ return vec3(0.0);
 }
 
 void main(){
-    uint v=gl_GlobalInvocationID.x;
-    if(v>=params.vertex_count)return;
-
-    vec3 position=base_positions[v].xyz;
-
-    for(uint a=0u;a<params.active_count;++a){
-        for(uint s=0u;s<params.slice_count;++s){
-            Slice sl=slices[s];
-            if(sl.morph_id!=active[a].morph_id)continue;
-
-            if(sl.storage_mode==0u){
-                position+=dense_delta(sl.offset_bytes,v,sl.precision)*active[a].weight;
-            }else if(sl.precision==0u){
-                for(uint i=0u;i<sl.element_count;++i){
-                    uint target=0u;
-                    vec3 delta=sparse32(sl.offset_bytes,i,target);
-                    if(target==v){
-                        position+=delta*active[a].weight;
-                        break;
-                    }
-                }
-            }
-            break;
-        }
-    }
-
-    output_positions[v]=vec4(position,1.0);
+ uint v=gl_GlobalInvocationID.x;if(v>=params.vertex_count)return;
+ vec3 position=base_positions[v].xyz;
+ for(uint a=0u;a<params.active_count;++a){
+  for(uint s=0u;s<params.slice_count;++s){
+   Slice sl=slices[s];if(sl.morph_id!=active[a].morph_id)continue;
+   if(sl.storage_mode==0u) position+=dense_delta(sl.offset_bytes,v,sl.precision)*active[a].weight;
+   else if(sl.precision==0u){
+    for(uint i=0u;i<sl.element_count;++i){uint target;vec3 d=sparse32(sl.offset_bytes,i,target);if(target==v){position+=d*active[a].weight;break;}}
+   }
+   break;
+  }
+ }
+ output_positions[v]=vec4(position,1.0);
 }
