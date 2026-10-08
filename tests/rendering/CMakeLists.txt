@@ -1,3 +1,8 @@
 add_executable(rogue_rendering_smoke rendering_smoke.cpp)
 target_link_libraries(rogue_rendering_smoke PRIVATE rogue_rendering)
 add_test(NAME rogue_rendering_smoke COMMAND rogue_rendering_smoke)
+
+add_executable(rogue_rendering_morph_buffer_smoke morph_buffer_smoke.cpp)
+target_link_libraries(rogue_rendering_morph_buffer_smoke PRIVATE rogue_rendering)
+target_compile_features(rogue_rendering_morph_buffer_smoke PRIVATE cxx_std_20)
+add_test(NAME rogue_rendering_morph_buffer_smoke COMMAND rogue_rendering_morph_buffer_smoke)
