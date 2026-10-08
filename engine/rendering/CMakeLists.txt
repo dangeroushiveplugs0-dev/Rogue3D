@@ -9,7 +9,8 @@ if(ROGUE_ENABLE_VULKAN)
   vulkan/vulkan_morph_buffer.cpp vulkan/vulkan_morph_evaluator.cpp vulkan/vulkan_upload_buffer.cpp
   vulkan/vulkan_device_buffer.cpp vulkan/vulkan_buffer_copy.cpp vulkan/vulkan_morph_packing.cpp
   vulkan/vulkan_mesh_buffer.cpp vulkan/vulkan_mesh_pipeline.cpp vulkan/vulkan_runtime.cpp
-  vulkan/vulkan_swapchain.cpp vulkan/vulkan_frame.cpp vulkan/vulkan_device.cpp)
+  vulkan/vulkan_swapchain.cpp vulkan/vulkan_frame.cpp vulkan/vulkan_device.cpp
+  vulkan/vulkan_frame_coordinator.cpp)
  target_include_directories(rogue_rendering_vulkan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR})
  target_compile_features(rogue_rendering_vulkan PUBLIC cxx_std_20)
  target_compile_definitions(rogue_rendering_vulkan PUBLIC ROGUE_ENABLE_VULKAN=1)
