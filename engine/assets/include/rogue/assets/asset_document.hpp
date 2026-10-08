@@ -18,7 +18,8 @@ enum class MorphStorage : std::uint8_t {
 
 enum class MorphPrecision : std::uint8_t {
     Float32 = 0,
-    Float16 = 1
+    Float16 = 1,
+    Auto = 2
 };
 
 struct SparseShapeDelta {
