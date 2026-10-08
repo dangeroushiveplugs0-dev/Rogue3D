@@ -1,12 +1,12 @@
-# RogueEngine
+# Squeak3D
 
-**RogueEngine** is a mobile-first, cross-platform 3D creation engine. The repository is **Rogue3D**.
+**Gearsin** is the engine inside **Squeak3D**: a mobile-first, cross-platform 3D creation engine.
 
 The engine is designed for phones and tablets first without sacrificing compatibility with desktop and web platforms.
 
 ## Direction
 
-RogueEngine combines:
+Gearsin combines:
 
 - High-performance native and WebAssembly systems
 - Verse for application/game state, structural logic, UI-facing properties, timelines, and rig logic
@@ -22,7 +22,9 @@ Modeling, per-face UV editing, topology tools, shape keys, rigging, IK/FK, anima
 
 ## Visual identity
 
-RogueEngine has an original dark technical UI with electric-green accents. Its signature startup animation is a GPU-friendly glossy green goo effect that enters from the screen edges and assembles into the geometric **R** logo before revealing the editor.
+Squeak3D uses a playful **Squirrel Girl**-themed woodland-tech direction. The startup and ambient motion language uses **tiny gears** as a recurring motif. Gear animations remain GPU-friendly, optional, quality-scaled, and reduced or disabled for reduced-motion settings.
+
+The previous Rogue/electric-green/geometric-R/goo branding is retired.
 
 The visual system is inspired by the project's "Rogue" name but does not depend on Marvel artwork or assets.
 
