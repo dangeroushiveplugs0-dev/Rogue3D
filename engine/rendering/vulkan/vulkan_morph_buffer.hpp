@@ -1,5 +1,6 @@
 #pragma once
 #include "rogue/rendering/morph_buffer.hpp"
+#include "rogue/rendering/vulkan/vulkan_upload_buffer.hpp"
 #include <cstdint>
 #include <vector>
 #if defined(ROGUE_ENABLE_VULKAN)
@@ -25,11 +26,11 @@ public:
     const std::vector<GpuActiveMorph>& active_morphs() const noexcept { return active_; }
 private:
     bool create_buffer(VkDeviceSize size);
-    bool upload(const std::vector<std::uint8_t>& bytes);
     std::uint32_t find_memory_type(std::uint32_t type_bits, VkMemoryPropertyFlags properties) const noexcept;
     VkPhysicalDevice physical_device_=VK_NULL_HANDLE; VkDevice device_=VK_NULL_HANDLE;
     VkQueue transfer_queue_=VK_NULL_HANDLE; std::uint32_t transfer_queue_family_=0;
     VkBuffer buffer_=VK_NULL_HANDLE; VkDeviceMemory memory_=VK_NULL_HANDLE; VkDeviceSize size_=0;
+    VulkanUploadBuffer staging_;
     std::vector<GpuMorphSlice> slices_; std::vector<GpuActiveMorph> active_;
 };
 #endif
