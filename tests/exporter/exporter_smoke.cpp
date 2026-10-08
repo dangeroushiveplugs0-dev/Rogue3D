@@ -45,6 +45,17 @@ int main() {
     sparse.body_part = "Elbow";
     morph.shape_keys.push_back(sparse);
 
+    rogue::assets::ShapeKey compact;
+    compact.name = "CompactShape";
+    compact.storage = rogue::assets::MorphStorage::Dense;
+    compact.precision = rogue::assets::MorphPrecision::Float16;
+    compact.position_deltas_f16 = {
+        rogue::assets::float_to_half(0.25f),
+        rogue::assets::float_to_half(-0.5f),
+        rogue::assets::float_to_half(1.0f)
+    };
+    morph.shape_keys.push_back(compact);
+
     rogue::assets::MorphDriver driver;
     driver.target = "SparseJCM";
     driver.expression = "Elbow";
@@ -81,11 +92,14 @@ int main() {
     assert(roundtrip.nodes.size()==1);
     assert(roundtrip.nodes[0].transform.position.x==1.0f);
     assert(roundtrip.morphs.size()==1);
-    assert(roundtrip.morphs[0].shape_keys.size()==2);
+    assert(roundtrip.morphs[0].shape_keys.size()==3);
     assert(roundtrip.morphs[0].shape_keys[0].storage==rogue::assets::MorphStorage::Dense);
     assert(roundtrip.morphs[0].shape_keys[0].position_deltas.size()==6);
     assert(roundtrip.morphs[0].shape_keys[0].position_deltas[3]==0.4f);
     assert(roundtrip.morphs[0].shape_keys[1].storage==rogue::assets::MorphStorage::Sparse);
+    assert(roundtrip.morphs[0].shape_keys[2].precision==rogue::assets::MorphPrecision::Float16);
+    assert(roundtrip.morphs[0].shape_keys[2].position_deltas_f16.size()==3);
+    assert(rogue::assets::half_to_float(roundtrip.morphs[0].shape_keys[2].position_deltas_f16[0]) > 0.249f);
     assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas.size()==2);
     assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas[0].vertex_index==1402);
     assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas[1].dz==-0.6f);
@@ -99,6 +113,7 @@ int main() {
     auto mobile = rogue::assets::make_mobile_profile();
     assert(mobile.streaming_enabled);
     assert(mobile.prefer_sparse_morphs);
+    assert(rogue::assets::half_to_float(rogue::assets::float_to_half(0.5f)) == 0.5f);
     rogue::assets::apply_asset_profile(roundtrip, mobile, {"SparseJCM"});
     assert(roundtrip.morphs[0].shape_keys.size()==1);
     assert(roundtrip.morphs[0].shape_keys[0].name=="SparseJCM");
