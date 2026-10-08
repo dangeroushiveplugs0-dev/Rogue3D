@@ -12,12 +12,14 @@ std::size_t shape_key_bytes(const ShapeKey& key) noexcept {
     constexpr std::size_t float_bytes = sizeof(float);
     std::size_t bytes = 0;
     if (key.storage == MorphStorage::Dense) {
-        if (key.position_deltas.size() <= std::numeric_limits<std::size_t>::max() / float_bytes)
+        if (key.precision == MorphPrecision::Float16) bytes += key.position_deltas_f16.size() * sizeof(std::uint16_t);
+        else if (key.position_deltas.size() <= std::numeric_limits<std::size_t>::max() / float_bytes)
             bytes += key.position_deltas.size() * float_bytes;
     } else {
-        constexpr std::size_t delta_bytes = sizeof(std::uint32_t) + sizeof(float) * 3;
-        if (key.sparse_deltas.size() <= std::numeric_limits<std::size_t>::max() / delta_bytes)
-            bytes += key.sparse_deltas.size() * delta_bytes;
+        const std::size_t delta_bytes = sizeof(std::uint32_t) + (key.precision == MorphPrecision::Float16 ? sizeof(std::uint16_t) * 3 : sizeof(float) * 3);
+        const std::size_t count = key.precision == MorphPrecision::Float16 ? key.sparse_deltas_f16.size() : key.sparse_deltas.size();
+        if (count <= std::numeric_limits<std::size_t>::max() / delta_bytes)
+            bytes += count * delta_bytes;
     }
     return bytes;
 }
