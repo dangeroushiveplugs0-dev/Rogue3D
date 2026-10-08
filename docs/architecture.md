@@ -1,6 +1,6 @@
-# RogueEngine Architecture
+# Squeak3D / Gearsin Architecture
 
-RogueEngine is a mobile-first, cross-platform 3D creation engine. Mobile is the first-class performance target, but the core is designed to run across phones, tablets, desktop operating systems, and the web.
+Squeak3D is the application/product built on **Gearsin**, a mobile-first, cross-platform 3D creation engine. Mobile is the first-class performance target, but the core is designed to run across phones, tablets, desktop operating systems, and the web.
 
 ## Core layers
 
@@ -31,6 +31,6 @@ Planned systems include modeling, per-face UV editing, rigging, animation, physi
 
 ## Visual identity
 
-RogueEngine uses an original dark technical interface with electric green accents. The startup experience can procedurally animate glossy green goo from the screen edges into the geometric R logo. This is an original brand treatment inspired by the project's "Rogue" name, not a Marvel asset.
+Squeak3D/Gearsin uses a playful Squirrel Girl-themed woodland-tech presentation. Tiny gears are the primary recurring motion motif for startup and lightweight ambient activity. These presentation systems remain separate from the portable engine/runtime architecture and must be quality-scaled for weaker devices.
 
 Ambient effects are optional and quality-scaled for weaker devices.
