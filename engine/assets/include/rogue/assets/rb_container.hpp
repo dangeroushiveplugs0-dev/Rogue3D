@@ -7,7 +7,7 @@ struct RbChunk { std::uint32_t type=0; std::vector<std::uint8_t> data; };
 class RbContainer {
 public:
  static constexpr std::uint32_t kMagic=0x31425252;
- static constexpr std::uint32_t kVersion=1;
+ static constexpr std::uint32_t kVersion=2;
  static std::uint32_t fourcc(char a,char b,char c,char d) noexcept;
  bool add_chunk(std::uint32_t type,std::vector<std::uint8_t> data);
  bool serialize(std::vector<std::uint8_t>& output) const;
