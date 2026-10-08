@@ -7,7 +7,7 @@ public:
  void update(double delta_seconds);
  void shutdown();
  bool is_initialized() const noexcept { return initialized_; }
- std::string_view name() const noexcept { return "RogueEngine"; }
+ std::string_view name() const noexcept { return "Gearsin"; }
 private:
  bool initialized_ = false;
 };
