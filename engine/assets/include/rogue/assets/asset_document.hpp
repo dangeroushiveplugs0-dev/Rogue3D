@@ -16,6 +16,11 @@ enum class MorphStorage : std::uint8_t {
     Sparse = 1
 };
 
+enum class MorphPrecision : std::uint8_t {
+    Float32 = 0,
+    Float16 = 1
+};
+
 struct SparseShapeDelta {
     std::uint32_t vertex_index = 0;
     float dx = 0.0f;
@@ -23,15 +28,25 @@ struct SparseShapeDelta {
     float dz = 0.0f;
 };
 
+struct SparseShapeDelta16 {
+    std::uint32_t vertex_index = 0;
+    std::uint16_t dx = 0;
+    std::uint16_t dy = 0;
+    std::uint16_t dz = 0;
+};
+
 struct ShapeKey {
     std::string name;
     MorphStorage storage = MorphStorage::Dense;
+    MorphPrecision precision = MorphPrecision::Float32;
 
     // Dense representation: XYZ triplets, one triplet per mesh vertex.
     std::vector<float> position_deltas;
+    std::vector<std::uint16_t> position_deltas_f16;
 
     // Sparse representation: only vertices affected by this morph.
     std::vector<SparseShapeDelta> sparse_deltas;
+    std::vector<SparseShapeDelta16> sparse_deltas_f16;
 
     float weight=0.0f;
     float slider_min=0.0f;
