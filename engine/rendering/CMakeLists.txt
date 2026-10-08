@@ -19,6 +19,7 @@ if(ROGUE_ENABLE_VULKAN)
         vulkan/vulkan_buffer_copy.cpp
         vulkan/vulkan_morph_packing.cpp
         vulkan/vulkan_mesh_buffer.cpp
+        vulkan/vulkan_mesh_pipeline.cpp
     )
     target_include_directories(rogue_rendering_vulkan PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
