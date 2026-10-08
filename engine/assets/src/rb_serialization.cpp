@@ -19,7 +19,7 @@ public:
 
     void u8(std::uint8_t value) { data.push_back(value); }
 
-    void u32(std::uint32_t value) {
+    void u16(std::uint16_t value) {\n        data.push_back(static_cast<std::uint8_t>(value));\n        data.push_back(static_cast<std::uint8_t>(value >> 8));\n    }\n\n    void u32(std::uint32_t value) {
         data.push_back(static_cast<std::uint8_t>(value));
         data.push_back(static_cast<std::uint8_t>(value >> 8));
         data.push_back(static_cast<std::uint8_t>(value >> 16));
@@ -60,7 +60,7 @@ public:
         for (auto value : values) u32(value);
     }
 
-    void f32_vector(const std::vector<float>& values) {
+    void u16_vector(const std::vector<std::uint16_t>& values) {\n        if (values.size() > kMaxCount) throw std::length_error("vector too large");\n        u32(static_cast<std::uint32_t>(values.size()));\n        for (auto value : values) u16(value);\n    }\n\n    void f32_vector(const std::vector<float>& values) {
         if (values.size() > kMaxCount) throw std::length_error("vector too large");
         u32(static_cast<std::uint32_t>(values.size()));
         for (auto value : values) f32(value);
@@ -83,7 +83,7 @@ public:
         return true;
     }
 
-    bool u32(std::uint32_t& value) {
+    bool u16(std::uint16_t& value) {\n        if (remaining() < 2) return false;\n        const auto* p = reinterpret_cast<const std::uint8_t*>(data.data() + offset);\n        value = static_cast<std::uint16_t>(p[0]) | static_cast<std::uint16_t>(p[1] << 8);\n        offset += 2;\n        return true;\n    }\n\n    bool u32(std::uint32_t& value) {
         if (remaining() < 4) return false;
         const auto* p = reinterpret_cast<const std::uint8_t*>(data.data() + offset);
         value = static_cast<std::uint32_t>(p[0]) |
@@ -135,7 +135,7 @@ public:
         return true;
     }
 
-    bool f32_vector(std::vector<float>& values) {
+    bool u16_vector(std::vector<std::uint16_t>& values) {\n        std::uint32_t count = 0;\n        if (!u32(count) || count > kMaxCount || count > remaining() / 2) return false;\n        values.resize(count);\n        for (auto& value : values)\n            if (!u16(value)) return false;\n        return true;\n    }\n\n    bool f32_vector(std::vector<float>& values) {
         std::uint32_t count = 0;
         if (!u32(count) || count > kMaxCount || count > remaining() / 4) return false;
         values.resize(count);
@@ -257,17 +257,33 @@ void write_morphs(Writer& w, const AssetDocument& a) {
         for (const auto& s : m.shape_keys) {
             w.str(s.name);
             w.u8(static_cast<std::uint8_t>(s.storage));
+            w.u8(static_cast<std::uint8_t>(s.precision));
             if (s.storage == MorphStorage::Dense) {
-                if (s.position_deltas.size() % 3 != 0)
-                    throw std::invalid_argument("dense shape key deltas must be XYZ triplets");
-                w.f32_vector(s.position_deltas);
+                if (s.precision == MorphPrecision::Float32) {
+                    if (s.position_deltas.size() % 3 != 0)
+                        throw std::invalid_argument("dense shape key deltas must be XYZ triplets");
+                    w.f32_vector(s.position_deltas);
+                } else if (s.precision == MorphPrecision::Float16) {
+                    if (s.position_deltas_f16.size() % 3 != 0)
+                        throw std::invalid_argument("dense Float16 shape key deltas must be XYZ triplets");
+                    w.u16_vector(s.position_deltas_f16);
+                } else throw std::invalid_argument("unknown morph precision");
             } else if (s.storage == MorphStorage::Sparse) {
-                if (s.sparse_deltas.size() > kMaxCount)
-                    throw std::length_error("sparse delta list too large");
-                w.u32(static_cast<std::uint32_t>(s.sparse_deltas.size()));
-                for (const auto& d : s.sparse_deltas) {
-                    w.u32(d.vertex_index); w.f32(d.dx); w.f32(d.dy); w.f32(d.dz);
-                }
+                if (s.precision == MorphPrecision::Float32) {
+                    if (s.sparse_deltas.size() > kMaxCount)
+                        throw std::length_error("sparse delta list too large");
+                    w.u32(static_cast<std::uint32_t>(s.sparse_deltas.size()));
+                    for (const auto& d : s.sparse_deltas) {
+                        w.u32(d.vertex_index); w.f32(d.dx); w.f32(d.dy); w.f32(d.dz);
+                    }
+                } else if (s.precision == MorphPrecision::Float16) {
+                    if (s.sparse_deltas_f16.size() > kMaxCount)
+                        throw std::length_error("sparse Float16 delta list too large");
+                    w.u32(static_cast<std::uint32_t>(s.sparse_deltas_f16.size()));
+                    for (const auto& d : s.sparse_deltas_f16) {
+                        w.u32(d.vertex_index); w.u16(d.dx); w.u16(d.dy); w.u16(d.dz);
+                    }
+                } else throw std::invalid_argument("unknown morph precision");
             } else {
                 throw std::invalid_argument("unknown morph storage");
             }
@@ -297,17 +313,30 @@ bool read_morphs(Reader& r, AssetDocument& a) {
         for (std::uint32_t j = 0; j < n; ++j) {
             ShapeKey s;
             std::uint8_t storage = 0;
-            if (!r.str(s.name) || !r.u8(storage)) return false;
+            std::uint8_t precision = 0;
+            if (!r.str(s.name) || !r.u8(storage) || !r.u8(precision)) return false;
+            if (precision > static_cast<std::uint8_t>(MorphPrecision::Float16)) return false;
+            s.precision = static_cast<MorphPrecision>(precision);
             if (storage == static_cast<std::uint8_t>(MorphStorage::Dense)) {
                 s.storage = MorphStorage::Dense;
-                if (!r.f32_vector(s.position_deltas) || s.position_deltas.size() % 3 != 0) return false;
+                if (s.precision == MorphPrecision::Float32) {
+                    if (!r.f32_vector(s.position_deltas) || s.position_deltas.size() % 3 != 0) return false;
+                } else {
+                    if (!r.u16_vector(s.position_deltas_f16) || s.position_deltas_f16.size() % 3 != 0) return false;
+                }
             } else if (storage == static_cast<std::uint8_t>(MorphStorage::Sparse)) {
                 s.storage = MorphStorage::Sparse;
                 std::uint32_t delta_count = 0;
                 if (!r.u32(delta_count) || delta_count > kMaxCount) return false;
-                s.sparse_deltas.resize(delta_count);
-                for (auto& d : s.sparse_deltas)
-                    if (!r.u32(d.vertex_index) || !r.f32(d.dx) || !r.f32(d.dy) || !r.f32(d.dz)) return false;
+                if (s.precision == MorphPrecision::Float32) {
+                    s.sparse_deltas.resize(delta_count);
+                    for (auto& d : s.sparse_deltas)
+                        if (!r.u32(d.vertex_index) || !r.f32(d.dx) || !r.f32(d.dy) || !r.f32(d.dz)) return false;
+                } else {
+                    s.sparse_deltas_f16.resize(delta_count);
+                    for (auto& d : s.sparse_deltas_f16)
+                        if (!r.u32(d.vertex_index) || !r.u16(d.dx) || !r.u16(d.dy) || !r.u16(d.dz)) return false;
+                }
             } else {
                 return false;
             }
