@@ -1,0 +1,3 @@
+add_executable(rogue_importer_smoke importer_smoke.cpp)
+target_link_libraries(rogue_importer_smoke PRIVATE rogue_importer)
+add_test(NAME rogue_importer_smoke COMMAND rogue_importer_smoke)
