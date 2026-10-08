@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(RogueEngine LANGUAGES CXX)
+option(ROGUE_BUILD_TESTS "Build RogueEngine tests" ON)
+add_subdirectory(engine/core)
+if(ROGUE_BUILD_TESTS)
+ enable_testing()
+ add_subdirectory(tests/core)
+endif()
