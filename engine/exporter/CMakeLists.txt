@@ -1,0 +1,4 @@
+add_library(rogue_exporter STATIC src/rb_exporter.cpp)
+target_include_directories(rogue_exporter PUBLIC include)
+target_link_libraries(rogue_exporter PUBLIC rogue_assets)
+target_compile_features(rogue_exporter PUBLIC cxx_std_20)

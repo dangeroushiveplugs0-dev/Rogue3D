@@ -1,0 +1,4 @@
+add_executable(rogue_exporter_smoke exporter_smoke.cpp)
+target_link_libraries(rogue_exporter_smoke PRIVATE rogue_exporter)
+target_compile_features(rogue_exporter_smoke PRIVATE cxx_std_20)
+add_test(NAME rogue_exporter_smoke COMMAND rogue_exporter_smoke)

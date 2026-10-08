@@ -1,0 +1,2 @@
+add_library(rogue_assets INTERFACE)
+target_include_directories(rogue_assets INTERFACE include)
