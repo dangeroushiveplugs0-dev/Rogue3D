@@ -16,7 +16,7 @@ public:
     VulkanMorphBuffer& operator=(const VulkanMorphBuffer&)=delete;
     bool initialize(VkPhysicalDevice physical_device, VkDevice device, VkQueue transfer_queue,
                     std::uint32_t transfer_queue_family, const MorphBuffer& source);
-    bool update(const MorphBuffer& source);
+    bool update(VkCommandBuffer command_buffer, const MorphBuffer& source);
     void destroy() noexcept;
     bool is_initialized() const noexcept { return device_!=VK_NULL_HANDLE && buffer_!=VK_NULL_HANDLE; }
     VkBuffer buffer() const noexcept { return buffer_; }
