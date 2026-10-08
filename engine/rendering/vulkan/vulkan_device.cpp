@@ -1,0 +1,12 @@
+#include "rogue/rendering/vulkan/vulkan_device.hpp"
+#if defined(ROGUE_ENABLE_VULKAN)
+#include <vector>
+namespace rogue::rendering::vulkan {
+VulkanDevice::~VulkanDevice(){destroy();}
+bool VulkanDevice::initialize(VkInstance i,VkSurfaceKHR s){destroy();if(!i||!s)return false;instance_=i;return pick_physical(s)&&create_logical()&&create_command_pool();}
+bool VulkanDevice::pick_physical(VkSurfaceKHR s){std::uint32_t n=0;if(vkEnumeratePhysicalDevices(instance_,&n,nullptr)!=VK_SUCCESS||!n)return false;std::vector<VkPhysicalDevice> list(n);if(vkEnumeratePhysicalDevices(instance_,&n,list.data())!=VK_SUCCESS)return false;for(auto device:list){std::uint32_t qn=0;vkGetPhysicalDeviceQueueFamilyProperties(device,&qn,nullptr);std::vector<VkQueueFamilyProperties> props(qn);vkGetPhysicalDeviceQueueFamilyProperties(device,&qn,props.data());for(std::uint32_t q=0;q<qn;++q){VkBool32 present=VK_FALSE;vkGetPhysicalDeviceSurfaceSupportKHR(device,q,s,&present);if((props[q].queueFlags&VK_QUEUE_GRAPHICS_BIT)&&present){physical_device_=device;graphics_family_=q;return true;}}}return false;}
+bool VulkanDevice::create_logical(){float priority=1.0f;const char* exts[]={"VK_KHR_swapchain"};VkDeviceQueueCreateInfo q{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};q.queueFamilyIndex=graphics_family_;q.queueCount=1;q.pQueuePriorities=&priority;VkDeviceCreateInfo d{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};d.queueCreateInfoCount=1;d.pQueueCreateInfos=&q;d.enabledExtensionCount=1;d.ppEnabledExtensionNames=exts;if(vkCreateDevice(physical_device_,&d,nullptr,&device_)!=VK_SUCCESS)return false;vkGetDeviceQueue(device_,graphics_family_,0,&graphics_queue_);return true;}
+bool VulkanDevice::create_command_pool(){VkCommandPoolCreateInfo p{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};p.queueFamilyIndex=graphics_family_;p.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;return vkCreateCommandPool(device_,&p,nullptr,&command_pool_)==VK_SUCCESS;}
+void VulkanDevice::destroy()noexcept{if(device_){if(command_pool_)vkDestroyCommandPool(device_,command_pool_,nullptr);vkDestroyDevice(device_,nullptr);}command_pool_=VK_NULL_HANDLE;device_=VK_NULL_HANDLE;physical_device_=VK_NULL_HANDLE;graphics_queue_=VK_NULL_HANDLE;graphics_family_=0;instance_=VK_NULL_HANDLE;}
+}
+#endif
