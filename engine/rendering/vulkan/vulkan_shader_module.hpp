@@ -17,6 +17,7 @@ public:
     VulkanShaderModule& operator=(const VulkanShaderModule&) = delete;
 
     bool initialize(VkDevice device, const std::vector<std::uint32_t>& spirv);
+    bool initialize_bytes(VkDevice device, const std::uint8_t* data, std::size_t size_bytes);
     bool load_file(VkDevice device, std::string_view path);
 
     static bool validate_spirv(const std::vector<std::uint32_t>& spirv) noexcept;
