@@ -5,14 +5,12 @@
 #endif
 namespace rogue::rendering::vulkan {
 #if defined(ROGUE_ENABLE_VULKAN)
-class VulkanUploadBuffer {
+class VulkanDeviceBuffer {
 public:
- ~VulkanUploadBuffer();
- VulkanUploadBuffer(const VulkanUploadBuffer&)=delete;
- VulkanUploadBuffer& operator=(const VulkanUploadBuffer&)=delete;
+ ~VulkanDeviceBuffer();
+ VulkanDeviceBuffer(const VulkanDeviceBuffer&)=delete;
+ VulkanDeviceBuffer& operator=(const VulkanDeviceBuffer&)=delete;
  bool initialize(VkPhysicalDevice,VkDevice,VkDeviceSize,VkBufferUsageFlags);
- bool upload(const void*,VkDeviceSize);
- bool copy_to(VkCommandBuffer,VkBuffer,VkDeviceSize=0)const;
  VkBuffer buffer()const noexcept{return buffer_;}
  VkDeviceSize size()const noexcept{return size_;}
  void destroy()noexcept;
