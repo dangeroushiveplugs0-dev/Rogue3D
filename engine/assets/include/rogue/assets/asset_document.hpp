@@ -1,18 +1,42 @@
 #pragma once
+
 #include <cstdint>
 #include <string>
 #include <vector>
+
 namespace rogue::assets {
+
 struct Blob { std::string name; std::vector<std::uint8_t> data; };
-struct ShapeKey { std::string name; std::vector<float> position_deltas; float weight = 0.0f; };
-struct MorphChannel { std::string name; std::vector<ShapeKey> shape_keys; };
-struct AnimationClip { std::string name; double duration_seconds = 0.0; };
+struct Vec3 { float x=0.0f; float y=0.0f; float z=0.0f; };
+struct Quat { float x=0.0f; float y=0.0f; float z=0.0f; float w=1.0f; };
+struct Transform { Vec3 position{}; Quat rotation{}; Vec3 scale{1.0f,1.0f,1.0f}; };
+
+struct ShapeKey { std::string name; std::vector<float> position_deltas; float weight=0.0f; float slider_min=0.0f; float slider_max=1.0f; std::string category; std::string body_part; };
+struct MorphDriverVariable { std::string name; std::string source; float scale=1.0f; };
+struct MorphDriver { std::string target; std::string expression; std::vector<MorphDriverVariable> variables; };
+struct MorphChannel { std::string name; std::string category; std::string body_part; std::vector<ShapeKey> shape_keys; std::vector<MorphDriver> drivers; };
+
+struct MeshBinding { std::string mesh_name; std::vector<std::uint32_t> vertex_indices; std::vector<float> weights; };
+struct Bone { std::string name; std::string parent; Transform rest_transform{}; };
+struct Armature { std::string name; std::vector<Bone> bones; };
+
+struct AnimationKey { double time_seconds=0.0; std::vector<float> values; };
+struct AnimationChannel { std::string target; std::string property; std::vector<AnimationKey> keys; };
+struct AnimationClip { std::string name; double duration_seconds=0.0; std::vector<AnimationChannel> channels; };
+struct SceneNode { std::string name; std::string parent; std::string mesh; std::string armature; Transform transform{}; };
+struct Constraint { std::string owner; std::string type; std::string target; float influence=1.0f; };
+
 struct AssetDocument {
     std::string name;
     std::string source_format;
-    std::vector<Blob> embedded_blobs;
+    std::string source_application;
+    std::vector<SceneNode> nodes;
+    std::vector<Armature> armatures;
+    std::vector<MeshBinding> skin_bindings;
     std::vector<MorphChannel> morphs;
     std::vector<AnimationClip> animations;
+    std::vector<Constraint> constraints;
+    std::vector<Blob> embedded_blobs;
     std::vector<std::uint8_t> native_metadata;
 };
 }
