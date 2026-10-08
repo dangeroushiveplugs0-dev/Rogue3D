@@ -9,3 +9,8 @@ BLEND support is intentionally split from the native runtime. A Blender file is 
 The planned Blend Bridge runs on a Blender-capable host and converts the Blender scene into RogueEngine's neutral AssetDocument. This can expose mesh and UV data, materials, textures, shape keys, body morphs, morph drivers where translatable, armatures, weights, animation, supported constraints, subdivision information and selected custom properties.
 
 The Diffeomorphic repository is GPL-2.0-or-later. RogueEngine will not copy or link its Blender Python implementation into the engine core. The optional bridge is a separate compatibility component with a clean conversion boundary.
+
+
+## Executable bridge
+
+The first bridge-side exporter now lives in `tools/blender_bridge/rogue_export.py`. It runs inside Blender and writes a versioned `rogueengine.bridge` JSON package. This keeps Blender and Diffeomorphic out of the mobile runtime while preserving the Blender-side result needed for morph and rig translation.
