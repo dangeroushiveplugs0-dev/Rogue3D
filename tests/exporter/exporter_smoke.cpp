@@ -20,19 +20,34 @@ int main() {
     morph.name = "Body";
     morph.category = "Diffeomorphic";
     morph.body_part = "Torso";
-    rogue::assets::ShapeKey key;
-    key.name = "BodyShape";
-    key.position_deltas = {0.1f,0.2f,0.3f,0.4f,0.5f,0.6f};
-    key.weight = 0.5f;
-    key.slider_min = -1.0f;
-    key.slider_max = 2.0f;
-    key.category = "Body";
-    key.body_part = "Torso";
-    morph.shape_keys.push_back(key);
+
+    rogue::assets::ShapeKey dense;
+    dense.name = "DenseShape";
+    dense.storage = rogue::assets::MorphStorage::Dense;
+    dense.position_deltas = {0.1f,0.2f,0.3f,0.4f,0.5f,0.6f};
+    dense.weight = 0.5f;
+    dense.slider_min = -1.0f;
+    dense.slider_max = 2.0f;
+    dense.category = "Body";
+    dense.body_part = "Torso";
+    morph.shape_keys.push_back(dense);
+
+    rogue::assets::ShapeKey sparse;
+    sparse.name = "SparseJCM";
+    sparse.storage = rogue::assets::MorphStorage::Sparse;
+    sparse.sparse_deltas.push_back({1402, 0.1f, 0.2f, 0.3f});
+    sparse.sparse_deltas.push_back({9120, -0.4f, 0.5f, -0.6f});
+    sparse.weight = 0.75f;
+    sparse.slider_min = 0.0f;
+    sparse.slider_max = 1.0f;
+    sparse.category = "JCM";
+    sparse.body_part = "Elbow";
+    morph.shape_keys.push_back(sparse);
+
     rogue::assets::MorphDriver driver;
-    driver.target = "BodyShape";
-    driver.expression = "Torso";
-    driver.variables.push_back({"Torso", "pose.bones[\"Torso\"].value", 1.25f});
+    driver.target = "SparseJCM";
+    driver.expression = "Elbow";
+    driver.variables.push_back({"Elbow", "pose.bones[\"Elbow\"].value", 1.25f});
     morph.drivers.push_back(driver);
     asset.morphs.push_back(morph);
 
@@ -65,8 +80,14 @@ int main() {
     assert(roundtrip.nodes.size()==1);
     assert(roundtrip.nodes[0].transform.position.x==1.0f);
     assert(roundtrip.morphs.size()==1);
-    assert(roundtrip.morphs[0].shape_keys.size()==1);
-    assert(roundtrip.morphs[0].shape_keys[0].slider_min==-1.0f);
+    assert(roundtrip.morphs[0].shape_keys.size()==2);
+    assert(roundtrip.morphs[0].shape_keys[0].storage==rogue::assets::MorphStorage::Dense);
+    assert(roundtrip.morphs[0].shape_keys[0].position_deltas.size()==6);
+    assert(roundtrip.morphs[0].shape_keys[0].position_deltas[3]==0.4f);
+    assert(roundtrip.morphs[0].shape_keys[1].storage==rogue::assets::MorphStorage::Sparse);
+    assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas.size()==2);
+    assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas[0].vertex_index==1402);
+    assert(roundtrip.morphs[0].shape_keys[1].sparse_deltas[1].dz==-0.6f);
     assert(roundtrip.morphs[0].drivers[0].variables[0].scale==1.25f);
     assert(roundtrip.armatures.size()==1);
     assert(roundtrip.constraints.size()==1);
