@@ -1,5 +1,5 @@
 add_library(rogue_materials STATIC
-    src/pbr.cpp
+    src/pbr_material.cpp
 )
 
 target_include_directories(rogue_materials PUBLIC include)

@@ -1,0 +1,3 @@
+add_executable(rogue_materials_smoke materials_smoke.cpp)
+target_link_libraries(rogue_materials_smoke PRIVATE rogue_materials)
+add_test(NAME rogue_materials_smoke COMMAND rogue_materials_smoke)
