@@ -1,9 +1,9 @@
 name: Vulkan Validation
 on:
   push:
-    branches: [ main ]
+    branches: [ Gear ]
   pull_request:
-    branches: [ main ]
+    branches: [ Gear ]
 jobs:
   shaders:
     runs-on: ubuntu-latest
