@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <unordered_set>
+#include <cstring>
 
 namespace rogue::assets {
 namespace {
@@ -19,6 +20,88 @@ std::size_t shape_key_bytes(const ShapeKey& key) noexcept {
             bytes += key.sparse_deltas.size() * delta_bytes;
     }
     return bytes;
+}
+
+std::uint16_t float_to_half(float value) noexcept {
+    std::uint32_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    const std::uint32_t sign = (bits >> 16) & 0x8000u;
+    const std::uint32_t exp = (bits >> 23) & 0xffu;
+    const std::uint32_t mant = bits & 0x7fffffu;
+    if (exp == 0xffu) {
+        if (mant == 0) return static_cast<std::uint16_t>(sign | 0x7c00u);
+        return static_cast<std::uint16_t>(sign | 0x7e00u);
+    }
+    int e = static_cast<int>(exp) - 127;
+    if (e > 15) return static_cast<std::uint16_t>(sign | 0x7c00u);
+    if (e >= -14) {
+        const std::uint32_t rounded = mant + 0x1000u;
+        std::uint32_t hmant = rounded >> 13;
+        int hexp = e + 15;
+        if (hmant == 0x400u) { hmant = 0; ++hexp; }
+        if (hexp >= 31) return static_cast<std::uint16_t>(sign | 0x7c00u);
+        return static_cast<std::uint16_t>(sign | (static_cast<std::uint32_t>(hexp) << 10) | hmant);
+    }
+    if (e >= -24) {
+        const int shift = -e - 14;
+        const std::uint32_t mantissa = 0x800000u | mant;
+        const std::uint32_t hmant = (mantissa + (1u << (shift + 12))) >> (shift + 13);
+        return static_cast<std::uint16_t>(sign | hmant);
+    }
+    return static_cast<std::uint16_t>(sign);
+}
+
+float half_to_float(std::uint16_t h) noexcept {
+    const std::uint32_t sign = static_cast<std::uint32_t>(h & 0x8000u) << 16;
+    const std::uint32_t exp = (h >> 10) & 0x1fu;
+    const std::uint32_t mant = h & 0x3ffu;
+    std::uint32_t bits = 0;
+    if (exp == 0) {
+        if (mant == 0) {
+            bits = sign;
+        } else {
+            std::uint32_t m = mant;
+            int e = -14;
+            while ((m & 0x400u) == 0) { m <<= 1; --e; }
+            m &= 0x3ffu;
+            bits = sign | (static_cast<std::uint32_t>(e + 127) << 23) | (m << 13);
+        }
+    } else if (exp == 0x1fu) {
+        bits = sign | 0x7f800000u | (mant << 13);
+    } else {
+        bits = sign | ((exp - 15u + 127u) << 23) | (mant << 13);
+    }
+    float value = 0.0f;
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+bool apply_morph_precision(AssetDocument& document, MorphPrecision precision) {
+    if (precision == MorphPrecision::Float32) {
+        for (auto& channel : document.morphs)
+            for (auto& key : channel.shape_keys)
+                key.precision = MorphPrecision::Float32;
+        return true;
+    }
+    if (precision != MorphPrecision::Float16) return false;
+    for (auto& channel : document.morphs) {
+        for (auto& key : channel.shape_keys) {
+            key.precision = MorphPrecision::Float16;
+            if (key.storage == MorphStorage::Dense) {
+                key.position_deltas_f16.clear();
+                key.position_deltas_f16.reserve(key.position_deltas.size());
+                for (float v : key.position_deltas) key.position_deltas_f16.push_back(float_to_half(v));
+                key.position_deltas.clear();
+            } else {
+                key.sparse_deltas_f16.clear();
+                key.sparse_deltas_f16.reserve(key.sparse_deltas.size());
+                for (const auto& d : key.sparse_deltas)
+                    key.sparse_deltas_f16.push_back({d.vertex_index,float_to_half(d.dx),float_to_half(d.dy),float_to_half(d.dz)});
+                key.sparse_deltas.clear();
+            }
+        }
+    }
+    return true;
 }
 
 bool name_required(const ShapeKey& key,
