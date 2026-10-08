@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <string_view>
 
 namespace rogue::assets {
 
@@ -64,5 +65,12 @@ bool apply_asset_profile(AssetDocument& document,
 
 AssetProfileReport inspect_asset_profile(const AssetDocument& document,
                                          const AssetProfile& profile);
+
+// Portable IEEE-754 binary16 conversion used by the .rb format.
+std::uint16_t float_to_half(float value) noexcept;
+float half_to_float(std::uint16_t bits) noexcept;
+
+// Convert selected morph payloads to the precision requested by a profile.
+bool apply_morph_precision(AssetDocument& document, MorphPrecision precision);
 
 } // namespace rogue::assets
